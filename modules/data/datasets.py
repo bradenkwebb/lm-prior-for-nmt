@@ -53,7 +53,7 @@ class BaseSequenceDataset(Dataset, ABC):
         else:
             self.tokenize = self.space_tok
 
-        if self.subword_path is not None:
+        if self.subword_path is not None and os.path.exists(subword_path + ".model"):
             subword = spm.SentencePieceProcessor()
             subword_path = fix_paths(subword_path, "datasets")
             subword.Load(subword_path + ".model")
@@ -138,8 +138,13 @@ class BaseSequenceDataset(Dataset, ABC):
 
     def dataitem(self, i):
 
+        # if hasattr(self, tokenize):
+        
         # tokenize sentence / text
         token_list = self.tokenize(self.data[i])
+        
+        # else:
+        #     token_list = self.data[i]
 
         # add special tokens such as <BOS> or <EOS>
         token_list = self.add_special_tokens(token_list)
@@ -223,13 +228,19 @@ class SequenceDataset(BaseSequenceDataset):
         """
         Dataset for sentence-level Language Modeling.
         """
-
+        super().__init__(*args, **kwargs)
         # todo: hasty hack - fix after submission
         if kwargs.get("vocab") is not None and kwargs.get("vocab").is_gpt2:
             with open(args[0], encoding="utf-8") as f:
                 self.vocab = kwargs.get("vocab")
                 self.data = [self.vocab.gpt2_tok(line) for line in f]
                 self.lengths = numpy.array([len(x) for x in self.data])
+        elif kwargs.get('vocab') is not None and kwargs.get('vocab').is_roberta:
+            with open(args[0], encoding="utf-8") as f:
+                self.vocab = kwargs.get("vocab")
+                self.data = [self.vocab.roberta_tok(line) for line in f]
+                self.lengths = numpy.array([len(x) for x in self.data])
+                self.tokenize = lambda x: x # the identity, since all the data will have been tokenized
         else:
             super().__init__(*args, **kwargs)
 
@@ -264,6 +275,8 @@ class TranslationDataset(Dataset):
                 pass
 
     def __str__(self):
+        print(len(self.vocab.vocab))
+        print(self.vocab)
         return tabulate([self.src.properties(), self.trg.properties()],
                         headers="keys", floatfmt=".4f", numalign="right")
 

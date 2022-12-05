@@ -11,7 +11,7 @@ from sacremoses import MosesDetokenizer
 from sklearn import preprocessing
 from numpy import linalg as LA
 from tqdm import tqdm
-from transformers import GPT2Tokenizer
+from transformers import GPT2Tokenizer, RobertaTokenizer
 
 from helpers.emb_utils import load_embeddings
 
@@ -44,6 +44,9 @@ class Vocab(object):
         self.id2tok = dict()
         self.freqs = dict()
 
+        self.roberta_tokenizer = None
+        self.is_roberta = False
+
         self.gpt2_tokenizer = None
         self.is_gpt2 = False
 
@@ -66,6 +69,28 @@ class Vocab(object):
             setattr(self, attr, value)
         self._set_special_token_ids()
         return self
+
+    def from_roberta(self, tokenizer: RobertaTokenizer):
+        self.SOS = tokenizer.bos_token
+        self.EOS = tokenizer.eos_token
+        self.UNK = tokenizer.unk_token
+        self.SOS_id = tokenizer.bos_token_id
+        self.EOS_id = tokenizer.eos_token_id
+        self.UNK_id = tokenizer.unk_token_id
+
+        self.tok2id = tokenizer.encoder
+        self.id2tok = tokenizer.decoder
+        self.roberta_tokenizer = tokenizer
+
+        self.is_roberta = True
+
+    def roberta_tok(self, x):
+        tokens = self.roberta_tokenizer.convert_tokens_to_ids(
+            self.roberta_tokenizer.tokenize(x, add_prefix_space=True))
+        return [self.SOS_id] + tokens + [self.EOS_id]
+
+    def roberta_detok(self, x):
+        return self.roberta_tokenizer.convert_tokens_to_string(x)
 
     def from_gpt2(self, tokenizer: GPT2Tokenizer):
         self.SOS = tokenizer.bos_token

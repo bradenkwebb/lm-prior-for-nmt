@@ -312,6 +312,7 @@ class Trainer:
                               self.optimizers[0].param_groups[0]['lr'])
 
     def process_batch(self, *args, **kwargs):
+        print('is this running?')
         raise NotImplementedError
 
     @staticmethod
@@ -353,12 +354,12 @@ class Trainer:
         pass
 
     def train_step(self, batch, epoch_losses, batch_index, epoch_start):
-
+        
         batch = self.batch_to_device(batch)
-
+        print('line 358')
         # forward pass using the model-specific _process_batch()
         batch_losses, batch_outputs = self.process_batch(*batch)
-
+        print('line 361')
         # ----------------------------------------------------------------
         # Callbacks: Batch Forward End
         # ----------------------------------------------------------------
@@ -366,10 +367,10 @@ class Trainer:
             c.batch_forward_end(self, batch, epoch_losses,
                                 batch_losses, batch_outputs)
         # ----------------------------------------------------------------
-
+        
         # aggregate the losses
         loss_sum, loss_list = self._aggregate_losses(batch_losses)
-
+        
         if isinstance(self.train_loader, MultiDataLoader):
             loss_list["loader"] = self.train_loader.get_current_loader()
 

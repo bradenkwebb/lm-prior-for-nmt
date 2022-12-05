@@ -49,7 +49,7 @@ def nmt_dataloaders(config, src_vocab=None, trg_vocab=None):
     b_toks = config["batch_tokens"]
 
     print("Building training dataset...")
-
+    
     train_src = SequenceDataset(config["data"]["src"]["train_path"],
                                 vocab=src_vocab,
                                 **{**config["data"], **config["data"]["src"]})

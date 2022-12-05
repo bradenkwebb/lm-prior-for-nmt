@@ -59,6 +59,7 @@ class NmtPriorTrainer(Trainer):
         outputs = self.model(x_eos, y_sos, x_len, y_len, **decoding)
         losses = dict()
         is_gpt2 = self.get_vocab()[1].is_gpt2
+        is_roberta = self.get_vocab()[1].is_roberta
 
         # Loss calculation
         losses["mt"] = self.criterion(outputs[1]["logits"], y_eos, y_len)[0]
@@ -78,6 +79,10 @@ class NmtPriorTrainer(Trainer):
                 if is_gpt2:
                     _mask = sequence_mask(y_len, y_sos.size(1)).float()
                     lm_logits = self.prior(y_sos, attention_mask=_mask)[0]
+                elif is_roberta:
+                    _mask = sequence_mask(y_len, y_sos.size(1)).float()
+                    # I have to multiply the logits by the transpose of the embedding matrix to get the shapes to match up
+                    lm_logits = self.prior(y_sos, attention_mask=_mask)[0] @ self.prior.embeddings.word_embeddings.weight.T
                 else:
                     lm_logits = self.prior(y_sos, y_len)["logits"]
 

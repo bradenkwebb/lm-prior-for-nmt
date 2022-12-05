@@ -1,7 +1,7 @@
 import os
 
 from torch import nn
-from transformers import GPT2Tokenizer, GPT2LMHeadModel
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, RobertaTokenizer, RobertaModel
 
 from helpers.opts import exp_options
 from helpers.training import load_checkpoint
@@ -36,13 +36,26 @@ def run(config):
             vocab_trg.from_gpt2(tokenizer)
             _checkp_prior = GPT2LMHeadModel.from_pretrained(_gpt_model)
             config["model"]["dec_padding_idx"] = None
+        elif 'bert' in config['data']['prior_path']:
+            model = RobertaModel.from_pretrained('gerulata/slovakbert')
+            # model = RobertaModel.from_pretrained(config['data']['prior_path'])
+            # model = RobertaModel.from_pretrained('slovakbert.pt')
+            # tokenizer = AutoTokenizer.from_pretrained('skbert_tok')
+            tokenizer = RobertaTokenizer.from_pretrained('gerulata/slovakbert')
+            vocab_trg = Vocab()
+            vocab_trg.from_roberta(tokenizer)
+            # _checkp_prior = RobertaModel.from_pretrained(model_path)
+            _checkp_prior = model
+            config['model']['dec_padding_idx'] = None # I don't know what this line does
         else:
             _checkp_prior = load_checkpoint(config["data"]["prior_path"])
             vocab_trg = _checkp_prior["vocab"]
 
-            if _checkp_prior["config"]["data"]["subword_path"] is not None:
-                sub_path = _checkp_prior["config"]["data"]["subword_path"]
-                config["data"]["trg"]["subword_path"] = sub_path
+            if 'config' in state:
+                if _checkp_prior["config"]["data"]["subword_path"] is not None:
+                    sub_path = _checkp_prior["config"]["data"]["subword_path"]
+                    config["data"]["trg"]["subword_path"] = sub_path
+                
 
     # -------------------------------------------------------------------------
     # Data Loading and Preprocessing
@@ -73,6 +86,13 @@ def run(config):
         if "gpt2" in config["data"]["prior_path"]:
             prior = _checkp_prior
             prior.to(config["device"])
+            freeze_module(prior)
+            for name, module in prior.named_modules():
+                if isinstance(module, nn.Dropout):
+                    module.p = 0
+        if 'bert' in config['data']['prior_path']:
+            prior = _checkp_prior
+            prior.to(config['device'])
             freeze_module(prior)
             for name, module in prior.named_modules():
                 if isinstance(module, nn.Dropout):

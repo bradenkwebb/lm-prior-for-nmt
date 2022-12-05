@@ -168,7 +168,13 @@ def load_checkpoint(name, path=None):
                                    for v in state["vocab"])
         else:
             state["vocab"] = Vocab().from_vocab_instance(state["vocab"])
-
+    else:
+        print("Model state_dict() has no key 'vocab'; running Braden's code to initialize that.")
+        print("I assume that the vocab has been loaded into skbert_tok")
+        import json
+        with open('skbert_tok/vocab.json') as vcb_json:
+            vocab = json.load(vcb_json)
+        state['vocab'] = vocab
     return state
 
 
